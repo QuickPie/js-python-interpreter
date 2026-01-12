@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Runner - Beta Version</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+</head>
+<body>
+    <div class="main-container">
+        <div class="editor-area" id="editor-area">
+            <h2 style="margin-top: 10px">Python 3.8</h2>
+            <textarea class="code-input" id="code-input"></textarea>
+            <button class="run-btn" id="run-btn" title="（Ctrl + Enter）">运行代码</button>
+        </div>
+        <div class="output-area" id="output-area">
+            <div class="output-header">
+                <h3 style="margin: 0;">Run:</h3>
+                <button class="close-btn" id="close-btn">×</button>
+            </div>
+            <div class="output" id="output"></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
