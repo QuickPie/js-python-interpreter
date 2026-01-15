@@ -9,7 +9,7 @@
 > 用纯JavaScript实现的Python解释器，在浏览器中直接运行Python代码
 
 ## 截图预览
-![JS Python解释器运行界面截图](/docs/images/ui.png)
+![JS Python解释器运行界面截图](https://quickpie.github.io/js-python-interpreter/docs/images/ui.png)
 
 ## 快速开始
 
