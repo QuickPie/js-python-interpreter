@@ -20,6 +20,7 @@
 4. 在右侧查看输出结果
 
 ### 方法二：本地运行
+**选项A - 使用Git**
 ```bash
 # 1. 下载项目
 git clone https://github.com/QuickPie/js-python-interpreter.git
@@ -31,6 +32,10 @@ cd js-python-interpreter
 open index.html  # Mac
 # 或直接双击 index.html 文件
 ```
+
+**选项B - 直接下载**
+1. 点击仓库页面的 Code → Download ZIP
+2. 解压后双击打开 index.html 即可
 
 ## 技术细节
 
