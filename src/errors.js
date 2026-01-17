@@ -1,7 +1,7 @@
 import {Loc} from './location.js';
 import {SourceContext} from './source_context.js';
 
-// PythonError基类
+// PythonError类
 export class PyError extends Error{
     /**
      * @param {string} type 错误类型名
