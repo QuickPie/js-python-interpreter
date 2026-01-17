@@ -9,8 +9,10 @@ import {
     Expression,
     Statement,
     Literal,
+    Identifier,
     EmptyStatement,
-    ExpressionStatement
+    ExpressionStatement,
+    BlockStatement
 } from './ast_nodes.js';
 
 export class Parser{
@@ -29,7 +31,6 @@ export class Parser{
 
         // 块解析状态
         this.expectingBlock=false;  // 是否期待一个块（冒号后）
-        this.blockType=null;  // 当前块的类型（'if', 'while'等）
         this.blockStartLine=-1;  // 块开始的行号
         this.inSingleLineBlock=false;  // 是否在单行块中
         this.singleLineBlockEnded=false;  // 单行块是否已结束
@@ -180,6 +181,42 @@ export class Parser{
     // ========== 处理缩进核心方法 ==========
 
     /**
+     * 处理冒号：开始期待一个块
+     */
+    handleColon(){
+        const colonToken=this.previous();
+
+        this.expectingBlock=true;
+        this.blockStartLine=colonToken.loc.startLine;
+        this.inSingleLineBlock=false;
+        this.singleLineBlockEnded=false;
+
+        console.log(`冒号 at line ${this.blockStartLine}`);
+    }
+
+    /**
+     * 处理换行：检查块类型（单行/多行）
+     */
+    handleNewline(){
+        const newlineToken=this.previous();
+
+        // 如果在期待块，且遇到换行，说明是多行块
+        if(this.expectingBlock&&!this.inSingleLineBlock){
+            console.log(`换行 at line ${newlineToken.loc.startLine}, 开始多行块`);
+
+            // 接下来必须遇到INDENT
+            if(!this.check(0,TokenType.INDENT)){
+                this.raiseError('IndentationError','expected an indented block',newlineToken.loc)
+            }
+        }
+
+        // 如果已经在单行块中遇到换行，错误
+        if(this.inSingleLineBlock&&!this.singleLineBlockEnded){
+            this.raiseError('IndentationError','unexpected indent',newlineToken.loc);
+        }
+    }
+
+    /**
      * 处理缩进：进入/退出块
      */
     handleIndentation(){
@@ -221,11 +258,10 @@ export class Parser{
             }
 
             // 退出块
-            const exitedBlock=this.exitBlock(newIndent);
+            const exitedBlock=this.exitBlock();
             return {
                 type:'exit_block',
                 indent:newIndent,
-                blockType:exitedBlock?.type
             };
         }
 
@@ -241,7 +277,6 @@ export class Parser{
         this.currentIndent=indentLevel;
 
         this.blockStack.push({
-            type:this.blockType||'generic',
             mode:blockMode,
             startLine:this.blockStartLine,
             indent:indentLevel
@@ -251,13 +286,13 @@ export class Parser{
             this.expectingBlock=false;
         }
 
-        console.log(`进入块: mode=${blockMode}, indent=${indentLevel}, type=${this.blockType}`)
+        console.log(`进入块: mode=${blockMode}, indent=${indentLevel}`)
     }
 
     /**
      * 退出块
      */
-    exitBlock(newIndent){
+    exitBlock(){
         if(this.indentStack.length<=1){
             this.raiseError('IndentationError','unexpected dedent');
         }
@@ -266,14 +301,46 @@ export class Parser{
         this.indentStack.pop();
         this.currentIndent=this.indentStack[this.indentStack.length-1];
 
-        // 如果退出的是多行块，重置块类型
+        // 如果退出的是多行块，重置块
         if(exitedBlock?.mode==='multiline'){
-            this.blockType=null;
             this.blockStartLine=-1;
         }
 
-        console.log(`退出块: type=${exitedBlock?.type}, 回到缩进=${this.currentIndent}`);
+        console.log(`退出块: 回到缩进=${this.currentIndent}`);
         return exitedBlock;
+    }
+
+    /**
+     * 检查并开始单行块
+     */
+    checkAndStartSingleLineBlock(){
+        // 如果在冒号后，且下一个token不是NEWLINE，则是单行块
+        if(this.expectingBlock&&!this.check(0,TokenType.NEWLINE)){
+            console.log('开始单行块');
+            this.inSingleLineBlock=true;
+            this.enterBlock(this.currentIndent,'singleline');
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 结束单行块
+     */
+    endSingleLineBlock(){
+        if(this.inSingleLineBlock){
+            console.log('结束单行块');
+            this.inSingleLineBlock=false;
+            this.singleLineBlockEnded=true;
+            this.expectingBlock=false;
+            this.blockStartLine=-1;
+
+            // 从块栈中弹出单行块
+            if(this.blockStack.length>0&&
+                this.blockStack[this.blockStack.length-1].mode==='singleline'){
+                this.blockStack.pop();
+            }
+        }
     }
 
     // ========== 解析方法 ==========
@@ -298,25 +365,53 @@ export class Parser{
                     continue;
                 }
 
-                // TODO
+                // 2.处理冒号（开始期待块）
+                if(this.match(TokenType.COLON)){
+                    this.handleColon();
+                    continue;
+                }
 
-                // 解析语句
+                // 3.处理换行
+                if(this.match(TokenType.NEWLINE)){
+                    this.handleNewline();
+
+                    // 如果单行块已结束，重置状态
+                    if(this.singleLineBlockEnded){
+                        this.endSingleLineBlock();
+                    }
+                    continue;
+                }
+
+                // 4.检查是否开始单行块
+                if(this.expectingBlock&&!this.inSingleLineBlock){
+                    if(this.checkAndStartSingleLineBlock()){
+                        // 单行块内的语句
+                        const stmt=this.parseStatement();
+                        if(stmt)ast.push(stmt);
+                        continue;
+                    }
+                }
+
+                // 6.解析普通语句
                 const stmt=this.parseStatement();
-                if(stmt)ast.push(stmt);
+                if(stmt){
+                    ast.push(stmt);
 
-                // 处理行尾分号
-                let foundSemicolon=false;
-                while(this.check(0,TokenType.SEMICOLON)){
-                    foundSemicolon=true;
-                    const curr=this.advance();
-                    ast.push(new EmptyStatement(curr.loc));
+                    // 如果在单行块中，检查语句间的分号
+                    if(this.inSingleLineBlock&&this.match(TokenType.SEMICOLON)){
+                        continue;
+                    }else if(this.inSingleLineBlock){
+                        // 单行块结束
+                        this.endSingleLineBlock();
+                    }
                 }
 
-                // 处理行尾换行
-                if(!foundSemicolon){
-                    this.consume(TokenType.NEWLINE,TokenType.EOF);
-                }
+                // 7.检查语句后的token
+                this.checkPostStatement();
             }
+
+            // 文件结束时验证所有块都结束
+            this.vaildateEndOfFile();
         }catch(error){
             // 如果是PythonError则返回错误，否则直接崩溃
             if(error.pythonic){
@@ -330,10 +425,38 @@ export class Parser{
     }
 
     /**
+     * 检查语句后的token是否合法
+     */
+    checkPostStatement(){
+        const validAfterStatement=new Set([
+            TokenType.NEWLINE,
+            TokenType.SEMICOLON,
+            TokenType.EOF,
+            TokenType.DEDENT,
+        ]);
+
+        if(!this.isAtEnd()&&!validAfterStatement.has(this.peek().type)){
+            // 单行块内允许连续语句（用空表达式（分号）分隔）
+            if(!this.inSingleLineBlock){
+                this.raiseError();
+            }
+        }
+    }
+
+    /**
+     * 文件结束时验证
+     */
+    validateEndOfFile(){
+        if(this.expectingBlock||this.currentIndent!==0){
+            this.raiseError('SyntaxError','unexpected EOF while parsing',this.peek().loc)
+        }
+    }
+
+    /**
      * 解析多行块（缩进块）
      */
     parseMultilineBlock(){
-        const startLoc=this.peek().loc;
+        const loc=this.peek().loc;
         const blockIndent=this.currentIndent;
         const body=[];
 
@@ -369,8 +492,15 @@ export class Parser{
             // 跳过空行
             if(this.match(TokenType.NEWLINE))continue;
 
-            // TODO: 解析语句
+            // 解析语句
+            const stmt=this.parseStatement();
+            if(stmt)body.push(stmt);
         }
+
+        const block=new BlockStatement(loc,body);
+        console.log(`多行块结束，语句数: ${body.length}`);
+        
+        return block;
     }
 
     /**
@@ -398,6 +528,8 @@ export class Parser{
     parseExpression(){
         if(this.check(0,literalSet)){
             return this.parsePrimary();
+        }if(this.check(0,TokenType.IDENTIFIER)){
+            return this.parsePrimary();
         }
         this.raiseError();
     }
@@ -409,6 +541,9 @@ export class Parser{
         if(this.check(0,literalSet)){
             const token=this.advance();
             return new Literal(token.loc,token.value);
+        }if(this.check(0,TokenType.IDENTIFIER)){
+            const token=this.advance();
+            return new Identifier(token.loc,token.value);
         }
         this.raiseError();
     }

@@ -54,6 +54,17 @@ export class Literal extends Expression{
     }
 }
 
+export class Identifier extends Expression{
+    constructor(loc,name){
+        super('Identifier',loc);
+        this.name=name;
+    }
+
+    toString(){
+        return `Identifier(name=${this.name})`
+    }
+}
+
 // 空语句
 export class EmptyStatement extends Statement{
     constructor(loc){
@@ -70,7 +81,6 @@ export class BlockStatement extends Statement{
     constructor(loc,body=[],indentSize=4){
         super('BlockStatement',loc);
         this.body=body;
-        this.indentSize=indentSize;  // 块的缩进级别（用于报错）
     }
 
     toString(){

@@ -1,0 +1,82 @@
+import {Environment} from './environment.js';
+import {PyError} from './errors.js';
+
+export class Interpreter{
+    constructor(sourceCode){
+        this.environment=new Environment();
+        this.output=[];
+        this.code=sourceCode;
+    }
+
+    /**
+     * 便捷报错方法
+     */
+    raiseError(type,msg,loc,cause=null){
+        throw new PyError(type,msg,loc,cause,this.code);
+    }
+
+    /**
+     * 遍历AST并执行
+     */
+    interpret(program){
+        try{
+            for(const stmt of program.body){
+                // 执行语句
+                this.evaluate(stmt);
+            }
+
+            return this.output.join('');
+        }catch(error){
+            // 运行时错误
+            if(error.pythonic){
+                return error;
+            }else{
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * 执行单个AST节点
+     */
+    execute(node){
+        switch(node.type){
+            case 'EmptyStatement':
+                return 
+            case 'Literal':
+                return node.value;
+            case 'Identifier':
+                return this.evalIdentifier(node);
+            case 'ExpressionStatement':
+                return this.execExpressionStatement(node);
+            case 'BlockStatement':
+                return this.execBlockStatement(node);
+        }
+    }
+
+    /**
+     * 求值标识符
+     */
+    evalIdentifier(node){
+        if(!this.environment.get(node.name)){
+            this.raiseError('NameError',`name '${node.name}' is not defined`,node.loc);
+        }
+        return this.environment.get(node.name);
+    }
+
+    /**
+     * 执行表达式语句
+     */
+    execExpressionStatement(node){
+        return this.execute(node.expression);
+    }
+
+    /**
+     * 执行块语句
+     */
+    execBlockStatement(node){
+        for(const stmt of node.body){
+            this.execute(stmt);
+        }
+    }
+}

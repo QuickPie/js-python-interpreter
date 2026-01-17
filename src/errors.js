@@ -65,7 +65,7 @@ export class PyError extends Error{
     _getContext(){
         const errorLine=this.sourceManager.getLineContent(this.loc.startLine);
         
-        // 只有当类型为SyntaxError且有错误链时才需要箭头指向错误位置
+        // 只有当类型为SyntaxError时才需要箭头指向错误位置
         if(this.type==='SyntaxError'&&this.sourceManager.code){
             const arrowPos=this.loc.startCol;
             const spaces=' '.repeat(4+arrowPos);

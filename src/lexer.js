@@ -30,22 +30,22 @@ export function lexer(code){
                 const indentResults=indentManager.processIndent(currIndent);
                 for(const result of indentResults){
                     if(result.type==='INDENT'){
-                        tokens.push(new Token(TokenType.INDENT,currIndent,new Loc(line,col,line,col)));
+                        tokens.push(new Token(TokenType.INDENT,result.level,new Loc(line,col,line,col)));
                     }else if(result.type==='DEDENT'){
-                        tokens.push(new Token(TokenType.DEDENT,currIndent,new Loc(line,col,line,col)));
+                        tokens.push(new Token(TokenType.DEDENT,result.level,new Loc(line,col,line,col)));
                     }else if(result.type==='INDENT_ERROR'){
                         tokens.push(new Token(TokenType.ERROR,`IndentationError: ${result.message}`,new Loc(line,col,line,col)))
                     }
                 }
-                pos+=indentMatch[0].length;
-                col+=indentMatch[0].length;
+                pos+=indentMatch[1].length;
+                col+=indentMatch[1].length;
             }else{
                 // 没有缩进，也可能需要DEDENT回0
                 currIndent=0;
                 const indentResults=indentManager.processIndent(0);
                 for(const result of indentResults){
                     if(result.type==='DEDENT'){
-                        tokens.push(new Token(TokenType.DEDENT,'DEDENT',new Loc(line,col,line,col)));
+                        tokens.push(new Token(TokenType.DEDENT,result.level,new Loc(line,col,line,col)));
                     }
                 }
             }
@@ -108,7 +108,7 @@ export function lexer(code){
     }
     const finalDedents=indentManager.endOfFile();
     for(const dedent of finalDedents){
-        tokens.push(new Token(TokenType.DEDENT,'DEDENT',new Loc(line,col,line,col)));
+        tokens.push(new Token(TokenType.DEDENT,dedent.level,new Loc(line,col,line,col)));
     }
     tokens.push(new Token(TokenType.EOF,'',new Loc(line,col,line,col)));
     return deleteRedundantNewlines(tokens);
