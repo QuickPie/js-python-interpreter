@@ -28,8 +28,12 @@ export const TokenType={
     FALSE:'FALSE',
     NONE:'NONE',
 
+    ASSIGN:'ASSIGN',
     SEMICOLON:'SEMICOLON',
     COLON:'COLON',
+    COMMA:'COMMA',
+    LPAR:'LPAR',
+    RPAR:'RPAR',
 
     IDENTIFIER:'IDENTIFIER',
 

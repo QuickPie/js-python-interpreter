@@ -51,19 +51,26 @@ open index.html  # Mac
 | HTML5/CSS3 | 网页界面 | - |
 | CodeMirror | 代码高亮显示 | 5.65.2 |
 
-## 功能
+## 功能特性
+
+🎉🎉🎉 **目前已完成本解释器的整套流程啦！** 🎉🎉🎉
+
+作者还将持续更新新语法，也会尽量每天都更新开发日志（在`docs/development_log.md`中），其中涵盖我的一切更新、修改还有心得。
+
+以下是本解释器的特色：
 
 ### ✅ 已完成
 
-* **基础语法支持**（Python 3.8）
+* **以下语法支持**（Python 3.8）
   * 基础字面量：`1341 "Hi!" True None`
   * 标识符：`a _myVar h1 我是汉字`
+  * 调用表达式`print()`（没错，目前只支持print函数）
   * 空表达式：`;`
 
 * **网页界面**
   * 实时代码编辑
   * 语法高亮显示
-  * 运行结果输出（目前仅支持输出词法分析和语法分析结果）
+  * 运行结果输出
   * 错误信息提示
 
 ### 🔄 开发中
@@ -82,6 +89,7 @@ js-python-interpreter/
 │   ├── token_patterns.js   # token匹配模板
 │   ├── location.js         # 位置信息
 │   ├── ast_nodes.js        # AST节点
+│   ├── builtins.js         # 内置函数
 │   ├── errors.js           # 异常
 │   ├── environment.js      # 环境变量类
 │   ├── literal_to_internal.js  # 解析字面量原始字符串为内部值
@@ -113,7 +121,7 @@ js-python-interpreter/
 ### 联系我
 * **GitHub**：[@QuickPie](https://github.com/QuickPie/)
 * **问题反馈**：请通过GitHub Issues
-* 欢迎交流和提供建议！
+* 欢迎各位与我一起交流！还可以提供一些建议！
 
 ## 许可证
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情

@@ -10,6 +10,7 @@ import {
     Statement,
     Literal,
     Identifier,
+    CallExpression,
     EmptyStatement,
     ExpressionStatement,
     BlockStatement
@@ -529,9 +530,48 @@ export class Parser{
         if(this.check(0,literalSet)){
             return this.parsePrimary();
         }if(this.check(0,TokenType.IDENTIFIER)){
+            if(this.check(1,TokenType.LPAR)&&this.check(2,TokenType.RPAR)){
+                this.parseCallExpression();
+            }
             return this.parsePrimary();
         }
         this.raiseError();
+    }
+
+    /**
+     * 解析调用表达式
+     */
+    parseCallExpression(){
+        const startLoc=Object.values(this.peek().loc.start);
+        const callee=this.advance().value;
+        this.consume(TokenType.LPAR);
+
+        const args=[];
+        const keywords=[];
+
+        // 先解析位置参数
+        while(!this.check(0,TokenType.RPAR)){
+            if(this.check(0,TokenType.IDENTIFIER)&&this.check(1,TokenType.ASSIGN)){
+                break;
+            }
+            const arg=this.parseExpression();
+            args.push(arg);
+            this.match(TokenType.COMMA);
+        }
+
+        // 再解析关键字
+        while(!this.check(0,TokenType.RPAR)){
+            const keywordName=this.advance().value;
+            if(!this.match(TokenType.ASSIGN)){
+                this.raiseError('SyntaxError','positional argument follows keyword argument',this.previous().loc);
+            }
+            const keywordValue=this.parseExpression();
+            keywords.push({name:keywordName,value:keywordValue});
+        }
+
+        const endLoc=Object.values(this.advance().loc.end);
+
+        return new CallExpression(new Loc(...startLoc,...endLoc),callee,args,keywords);
     }
 
     /**

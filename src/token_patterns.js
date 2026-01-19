@@ -9,8 +9,12 @@ export const tokenPatterns=[
     [TokenType.TRUE,/^\bTrue\b/],
     [TokenType.FALSE,/^\bFalse\b/],
     [TokenType.NONE,/^\bNone\b/],
+    [TokenType.ASSIGN,/^=/],
     [TokenType.SEMICOLON,/^;/],
     [TokenType.COLON,/^:/],
+    [TokenType.COMMA,/^,/],
+    [TokenType.LPAR,/^\(/],
+    [TokenType.RPAR,/^\)/],
     [TokenType.IDENTIFIER,/^[a-zA-Z_\u4e00-\u9fff][a-zA-Z0-9_\u4e00-\u9fff]*/],
     [TokenType.WHITESPACE,/^[ \t]+/],
 ]

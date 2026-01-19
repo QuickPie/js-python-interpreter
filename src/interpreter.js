@@ -42,11 +42,13 @@ export class Interpreter{
     execute(node){
         switch(node.type){
             case 'EmptyStatement':
-                return 
+                return;
             case 'Literal':
                 return node.value;
             case 'Identifier':
                 return this.evalIdentifier(node);
+            case 'CallExpression':
+                return this.evalCallExpression(node);
             case 'ExpressionStatement':
                 return this.execExpressionStatement(node);
             case 'BlockStatement':
@@ -62,6 +64,25 @@ export class Interpreter{
             this.raiseError('NameError',`name '${node.name}' is not defined`,node.loc);
         }
         return this.environment.get(node.name);
+    }
+    
+    /**
+     * 求值调用表达式
+     */
+    evalCallExpression(node){
+        const func=this.execute(node.callee);
+
+        // 计算位置参数
+        const args=node.arguments.map(arg=>this.execute(arg));
+
+        // 计算关键字参数
+        const kwargs={};
+        for(const kw of node.keywords){
+            kwargs[kw.name]=this.execute(kw.value);
+        }
+
+        // 调用函数
+        return func(args,kwargs);
     }
 
     /**

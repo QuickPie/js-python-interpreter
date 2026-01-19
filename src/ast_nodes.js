@@ -43,7 +43,7 @@ export class Literal extends Expression{
     constructor(loc,raw){
         super('Literal',loc);
         [this.value,this.isComplex]=LiteralParser.parse(raw);
-        this.raw=raw;
+        this.raw=raw;  // 原始值仅用于toString方法，无其他用处
     }
 
     toString(){
@@ -54,6 +54,7 @@ export class Literal extends Expression{
     }
 }
 
+// 标识符
 export class Identifier extends Expression{
     constructor(loc,name){
         super('Identifier',loc);
@@ -62,6 +63,20 @@ export class Identifier extends Expression{
 
     toString(){
         return `Identifier(name=${this.name})`
+    }
+}
+
+// 调用表达式
+export class CallExpression extends Expression{
+    constructor(loc,callee,args,keywords){
+        super('CallExpression',loc);
+        this.callee=callee;
+        this.arguments=args;
+        this.keywords=keywords;
+    }
+
+    toString(){
+        return `CallExpression(callee=${this.callee},arguments=${this.arguments},keywords=${this.keywords})`
     }
 }
 
