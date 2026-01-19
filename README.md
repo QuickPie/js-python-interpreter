@@ -55,7 +55,7 @@ open index.html  # Mac
 
 🎉🎉🎉 **目前已完成本解释器的整套流程啦！** 🎉🎉🎉
 
-作者还将持续更新新语法，也会尽量每天都更新开发日志（[docs/development_log.md](https://github.com/QuickPie/js-python-interpreter/docs/development_log.md)），其中涵盖我的一切更新、修改还有心得。
+作者还将持续更新新语法，也会尽量每天都更新开发日志（[docs/development_log.md](https://github.com/QuickPie/js-python-interpreter/tree/main/docs/development_log.md)），其中涵盖我的一切更新、修改还有心得。
 
 以下是本解释器的特色：
 
