@@ -80,17 +80,6 @@ export class CallExpression extends Expression{
     }
 }
 
-// 空语句
-export class EmptyStatement extends Statement{
-    constructor(loc){
-        super('EmptyStatement',loc);
-    }
-
-    toString(){
-        return 'EmptyStatement()';
-    }
-}
-
 // 块语句
 export class BlockStatement extends Statement{
     constructor(loc,body=[],indentSize=4){

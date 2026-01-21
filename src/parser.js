@@ -11,7 +11,6 @@ import {
     Literal,
     Identifier,
     CallExpression,
-    EmptyStatement,
     ExpressionStatement,
     BlockStatement
 } from './ast_nodes.js';
@@ -47,11 +46,11 @@ export class Parser{
      * 
      * 若当前token为TokenType.ERROR，则`[type,msg]=this.peek().value.split(': ',2);`
      */
-    raiseError(type='SyntaxError',msg='invalid syntax',loc=this.peek().loc,cause=null,code=this.code,isRuntimeError=false){
+    raiseError(type='SyntaxError',msg='invalid syntax',loc=this.peek().loc,cause=null){
         if(this.check(0,TokenType.ERROR)){
             [type,msg]=this.peek().value.split(': ',2);
         }
-        throw new PyError(type,msg,loc,cause,code,isRuntimeError);
+        throw new PyError(type,msg,loc,'',cause,this.code,false);
     }
 
     // ========== 核心工具方法 ==========
@@ -412,7 +411,7 @@ export class Parser{
             }
 
             // 文件结束时验证所有块都结束
-            this.vaildateEndOfFile();
+            this.validateEndOfFile();
         }catch(error){
             // 如果是PythonError则返回错误，否则直接崩溃
             if(error.pythonic){
@@ -431,8 +430,8 @@ export class Parser{
     checkPostStatement(){
         const validAfterStatement=new Set([
             TokenType.NEWLINE,
-            TokenType.SEMICOLON,
             TokenType.EOF,
+            TokenType.SEMICOLON,
             TokenType.DEDENT,
         ]);
 
@@ -442,6 +441,8 @@ export class Parser{
                 this.raiseError();
             }
         }
+
+        this.advance();
     }
 
     /**
@@ -509,7 +510,7 @@ export class Parser{
      */
     parseStatement(){
         if(this.check(0,TokenType.SEMICOLON)){
-            return new EmptyStatement(this.advance().loc);
+            this.raiseError();
         }
         return this.parseExpressionStatement();
     }
@@ -530,8 +531,8 @@ export class Parser{
         if(this.check(0,literalSet)){
             return this.parsePrimary();
         }if(this.check(0,TokenType.IDENTIFIER)){
-            if(this.check(1,TokenType.LPAR)&&this.check(2,TokenType.RPAR)){
-                this.parseCallExpression();
+            if(this.check(1,TokenType.LPAR)){
+                return this.parseCallExpression();
             }
             return this.parsePrimary();
         }
@@ -543,7 +544,7 @@ export class Parser{
      */
     parseCallExpression(){
         const startLoc=Object.values(this.peek().loc.start);
-        const callee=this.advance().value;
+        const callee=new Identifier(this.peek().loc,this.advance().value);
         this.consume(TokenType.LPAR);
 
         const args=[];
@@ -567,6 +568,7 @@ export class Parser{
             }
             const keywordValue=this.parseExpression();
             keywords.push({name:keywordName,value:keywordValue});
+            this.match(TokenType.COMMA);
         }
 
         const endLoc=Object.values(this.advance().loc.end);

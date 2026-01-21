@@ -1,5 +1,6 @@
 import {lexer} from './src/lexer.js';
 import {Parser} from './src/parser.js';
+import {Interpreter} from './src/interpreter.js';
 import {Program} from './src/ast_nodes.js';
 import {PyError} from './src/errors.js';
 
@@ -54,18 +55,40 @@ document.addEventListener('DOMContentLoaded',()=>{
 
         // 显示语法分析结果
         html+='<br>';
-        
-        if(ast instanceof Program){
-            html+=`<b>解析成功！</b>`;
-            html+=`<pre>${JSON.stringify(ast,null,2)}</pre>`;
-        }else if(ast instanceof PyError){
+
+        if(ast instanceof PyError){
             console.log(ast,ast._PyStack);
             html+=`<b>解析失败！</b>`;
             html+=`<code><pre style="font-family:Monaco,monospace; margin:5px 0">${escapePreHtml(ast.toString())}</pre></code>`;
+            outputDiv.innerHTML=html+'<br>';
+            return;
+        }
+        
+        html+=`<b>解析成功！</b>`;
+        html+=`<pre>${JSON.stringify(ast,null,2)}</pre>`;
+        
+        outputDiv.innerHTML=html+'<br>';
+
+        // 调用解释器
+        const interpreter=new Interpreter(code);
+        const output=interpreter.interpret(ast);
+
+        // 显示输出
+        html+='<br>';
+
+        if(output instanceof PyError){
+            console.log(output,output._PyStack)
+            html+=`<b>运行时错误！</b>`;
+            html+=`<code><pre style="font-family:Monaco,monospace; margin:5px 0">${escapePreHtml(output.toString())}</pre></code>`;
+            outputDiv.innerHTML=html+'<br>';
+            return;
         }
 
+        html+=`<b>运行成功！</b>`;
+        html+=`<pre>${output}</pre>`;
+
         outputDiv.innerHTML=html+'<br>';
-        });
+    });
 
     // 关闭按钮点击事件
     closeBtn.addEventListener('click',()=>{

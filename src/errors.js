@@ -11,7 +11,7 @@ export class PyError extends Error{
      * @param {string} sourceCode 源代码
      * @param {boolean} isRuntimeError 是否为运行时报错
      */
-    constructor(type,msg,loc,cause=null,sourceCode='',isRuntimeError=true){
+    constructor(type,msg,loc,scopeName='',cause=null,sourceCode='',isRuntimeError=true){
         super(msg);
 
         // JavaScript标准Error属性
@@ -27,6 +27,7 @@ export class PyError extends Error{
         this.loc=loc;
         this.pythonic=true;  // PythonError标识
         this.cause=cause;  // 错误链
+        this.scopeName=scopeName;  // 在哪个作用域里报错的
         this._PyStack=this._generateStack();  // Python风格调用栈
 
         // 冻结对象防止修改
@@ -41,7 +42,7 @@ export class PyError extends Error{
     
         if(this.cause){
             stack+=`\nThe above exception was the direct cause of the following exception:\n\n`;
-            stack+=this.cause._formatError();
+            stack+=this.cause._generateStack();
         }
 
         return stack;
@@ -52,15 +53,19 @@ export class PyError extends Error{
      */
     _formatError(){
         let stack='';
-        if(this.isRuntimeError)stack+='Traceback (most recent call last):\n';
-        stack+=`  File "<stdin>", line ${this.loc.startLine}\n`;
+        if(this.isRuntimeError){
+            stack+='Traceback (most recent call last):\n';
+            stack+=`  File "<stdin>", line ${this.loc.startLine}\n, in ${this.scopeName}`;
+        }else{
+            stack+=`  File "<stdin>", line ${this.loc.startLine}\n`;
+        }
         stack+=`    ${this._getContext()}\n`
         stack+=`${this.type}: ${this.msg}\n`
         return stack;
     }
 
     /**
-     * 获取错误行的源代码
+     * 获取错误的上下文
      */
     _getContext(){
         const errorLine=this.sourceManager.getLineContent(this.loc.startLine);

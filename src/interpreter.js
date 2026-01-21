@@ -1,18 +1,20 @@
 import {Environment} from './environment.js';
 import {PyError} from './errors.js';
+import {Builtins} from './builtins.js';
 
 export class Interpreter{
     constructor(sourceCode){
         this.environment=new Environment();
         this.output=[];
         this.code=sourceCode;
+        Builtins.setupAll(this);
     }
 
     /**
      * 便捷报错方法
      */
-    raiseError(type,msg,loc,cause=null){
-        throw new PyError(type,msg,loc,cause,this.code);
+    raiseError(type,msg,loc,scopeName=this.environment.name,cause=null){
+        throw new PyError(type,msg,loc,scopeName,cause,this.code);
     }
 
     /**
@@ -22,9 +24,10 @@ export class Interpreter{
         try{
             for(const stmt of program.body){
                 // 执行语句
-                this.evaluate(stmt);
+                this.execute(stmt);
             }
 
+            console.log(this.output,this.output.join(''));
             return this.output.join('');
         }catch(error){
             // 运行时错误
@@ -41,8 +44,6 @@ export class Interpreter{
      */
     execute(node){
         switch(node.type){
-            case 'EmptyStatement':
-                return;
             case 'Literal':
                 return node.value;
             case 'Identifier':

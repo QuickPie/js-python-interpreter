@@ -20,16 +20,18 @@ export class Builtins{
             const sep=kwargs.sep||' ';
             const end=kwargs.end||'\n';
 
-            const output=args.map(arg=>this.internalToString(arg)).join(sep)+end;
+            const output=args.map(arg=>this.restore(arg)).join(sep)+end;
             interpreter.output.push(output);
-            return;
+            return undefined;
         }
     }
 
+    // TODO: 定义create系列函数
+
     /**
-     * 将内部值转换为Python字符串
+     * 将内部值恢复为Python值字符串
      */
-    static internalToString(value){
+    static restore(value){
         if(value===null||value===undefined){
             return 'None';
         }
@@ -38,6 +40,4 @@ export class Builtins{
         }
         return value;
     }
-
-    // TODO: 定义create系列函数
 }
