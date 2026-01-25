@@ -2,7 +2,7 @@ export class Environment{
     /**
      * @param {Environment|null} parent 父作用域
      */
-    constructor(parent=null,name='<stdin>'){
+    constructor(parent=null,name='<module>'){
         this.store=new Map();
         this.name=name;
         this.parent=parent;

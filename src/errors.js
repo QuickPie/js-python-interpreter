@@ -55,7 +55,7 @@ export class PyError extends Error{
         let stack='';
         if(this.isRuntimeError){
             stack+='Traceback (most recent call last):\n';
-            stack+=`  File "<stdin>", line ${this.loc.startLine}\n, in ${this.scopeName}`;
+            stack+=`  File "<stdin>", line ${this.loc.startLine}, in ${this.scopeName}\n`;
         }else{
             stack+=`  File "<stdin>", line ${this.loc.startLine}\n`;
         }
@@ -77,7 +77,7 @@ export class PyError extends Error{
             return `${errorLine}\n${spaces}^`;
         }
 
-        return `    ${errorLine}`;
+        return errorLine.trimStart();
     }
 
     toString(){

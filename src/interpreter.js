@@ -1,13 +1,12 @@
 import {Environment} from './environment.js';
 import {PyError} from './errors.js';
-import {Builtins} from './builtins.js';
+import {interpreter,Builtins} from './builtins.js';
 
 export class Interpreter{
     constructor(sourceCode){
         this.environment=new Environment();
         this.output=[];
         this.code=sourceCode;
-        Builtins.setupAll(this);
     }
 
     /**
@@ -22,6 +21,11 @@ export class Interpreter{
      */
     interpret(program){
         try{
+            interpreter=this;
+
+            // 初始化内置函数
+            Builtins.setupAll();
+
             for(const stmt of program.body){
                 // 执行语句
                 this.execute(stmt);
@@ -83,7 +87,7 @@ export class Interpreter{
         }
 
         // 调用函数
-        return func(args,kwargs);
+        return func(args,kwargs,node.loc);
     }
 
     /**
