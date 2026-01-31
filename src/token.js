@@ -34,6 +34,10 @@ export const TokenType={
     COMMA:'COMMA',
     LPAR:'LPAR',
     RPAR:'RPAR',
+    LSQB:'LSQB',
+    RSQB:'RSQB',
+    LBRACE:'LBRACE',
+    RBRACE:'RBRACE',
 
     IDENTIFIER:'IDENTIFIER',
 
@@ -50,6 +54,12 @@ export const literalSet=new Set([
     TokenType.TRUE,
     TokenType.FALSE,
     TokenType.NONE
+]);
+
+export const terminatorSet=new Set([
+    TokenType.NEWLINE,
+    TokenType.SEMICOLON,
+    TokenType.EOF
 ]);
 
 

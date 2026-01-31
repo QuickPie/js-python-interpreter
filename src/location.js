@@ -11,10 +11,10 @@ export class Loc{
     }
 
     get start(){
-        return {line:this.startLine,col:this.startCol};
+        return [this.startLine,this.startCol];
     }
 
     get end(){
-        return {line:this.endLine,col:this.endCol};
+        return [this.endLine,this.endCol];
     }
 }

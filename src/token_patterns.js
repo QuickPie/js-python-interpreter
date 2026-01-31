@@ -15,6 +15,10 @@ export const tokenPatterns=[
     [TokenType.COMMA,/^,/],
     [TokenType.LPAR,/^\(/],
     [TokenType.RPAR,/^\)/],
+    [TokenType.LSQB,/^\[/],
+    [TokenType.RSQB,/^\]/],
+    [TokenType.LBRACE,/^\{/],
+    [TokenType.RBRACE,/^\}/],
     [TokenType.IDENTIFIER,/^[a-zA-Z_\u4e00-\u9fff][a-zA-Z0-9_\u4e00-\u9fff]*/],
     [TokenType.WHITESPACE,/^[ \t]+/],
 ]

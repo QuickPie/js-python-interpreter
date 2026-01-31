@@ -1,6 +1,6 @@
 import {Environment} from './environment.js';
 import {PyError} from './errors.js';
-import {interpreter,Builtins} from './builtins.js';
+import {setInterpreter,Builtins,PyList,PyTuple,PyDict,PySet} from './builtins.js';
 
 export class Interpreter{
     constructor(sourceCode){
@@ -21,7 +21,7 @@ export class Interpreter{
      */
     interpret(program){
         try{
-            interpreter=this;
+            setInterpreter(this);
 
             // 初始化内置函数
             Builtins.setupAll();
@@ -50,6 +50,14 @@ export class Interpreter{
         switch(node.type){
             case 'Literal':
                 return node.value;
+            case 'ListLiteral':
+                return new PyList(node.elements);
+            case 'TupleLiteral':
+                return new PyTuple(node.elements);
+            case 'DictLiteral':
+                return new PyDict(node.keys,node.values);
+            case 'SetLiteral':
+                return new PySet(node.elements);
             case 'Identifier':
                 return this.evalIdentifier(node);
             case 'CallExpression':
@@ -58,6 +66,8 @@ export class Interpreter{
                 return this.execExpressionStatement(node);
             case 'BlockStatement':
                 return this.execBlockStatement(node);
+            default:
+                this.raiseError('RuntimeError','尚未支持的语法\nUnsupported syntax',node.loc);
         }
     }
 

@@ -2,7 +2,7 @@ import {Loc} from './location.js';
 import {PyError} from './errors.js';
 import {
     TokenType,Token,
-    literalSet
+    literalSet,terminatorSet
 } from './token.js';
 import {
     Program,
@@ -10,6 +10,10 @@ import {
     Statement,
     Literal,
     Identifier,
+    ListLiteral,
+    TupleLiteral,
+    DictLiteral,
+    SetLiteral,
     CallExpression,
     ExpressionStatement,
     BlockStatement
@@ -86,9 +90,9 @@ export class Parser{
         const targetToken=this.tokens[this.pos+offset];        
 
         if(types.length===1&&typeof types[0]==='object'&&!(types[0] instanceof String)&&
-            this._isIterable(types[0])&&!this._isType(types[0])){
+            this.#isIterable(types[0])&&!this.#isType(types[0])){
             const expected=types[0];
-            return this._isValueInCollection(targetToken.type,expected);
+            return this.#isValueInCollection(targetToken.type,expected);
         }else{
             for(const type of types){
                 if(targetToken.type===type)return true;
@@ -100,7 +104,7 @@ export class Parser{
     /**
      * 检查值是否在集合中
      */
-    _isValueInCollection(value,collection){
+    #isValueInCollection(value,collection){
         // 1.如果是Set，使用has()方法
         if(collection instanceof Set){
             return collection.has(value);
@@ -135,7 +139,7 @@ export class Parser{
     /**
      * 检查对象是否可迭代（即是否具有`Symbol.iterator`属性）
      */
-    _isIterable(obj){
+    #isIterable(obj){
         return obj!=null&&typeof obj[Symbol.iterator]==='function';
     }
 
@@ -145,7 +149,7 @@ export class Parser{
      * JavaScript中，所有类型通常都是通过函数实现的，它们本质上是函数。
      * 但类型和函数的区别是，类型有`prototype`属性，而函数没有。
      */
-    _isType(obj){
+    #isType(obj){
         return obj!=null&&typeof obj==='function'&&obj.prototype!==undefined;
     }
 
@@ -520,17 +524,42 @@ export class Parser{
      */
     parseExpressionStatement(){
         const loc=this.peek().loc;
-        const expression=this.parseExpression();
+        const expression=this.parseExpressionWithTuple();
         return new ExpressionStatement(loc,expression);
+    }
+
+    /**
+     * 解析表达式，支持元组形式并可能解析为元组
+     */
+    parseExpressionWithTuple(){
+        const first=this.parseExpression();
+
+        // 检查逗号
+        if(this.match(TokenType.COMMA)){
+            // 解析元组剩余部分
+            return this.parseTupleLiteralRest(first);
+        }
+
+        return first;
     }
 
     /**
      * 解析表达式
      */
     parseExpression(){
+        if(this.check(0,TokenType.LSQB)){
+            return this.parseListLiteral();
+        }
+        if(this.check(0,TokenType.LPAR)){
+            return this.parsePrimary();
+        }
+        if(this.check(0,TokenType.LBRACE)){
+            return this.parseDictOrSetLiteral();
+        }
         if(this.check(0,literalSet)){
             return this.parsePrimary();
-        }if(this.check(0,TokenType.IDENTIFIER)){
+        }
+        if(this.check(0,TokenType.IDENTIFIER)){
             if(this.check(1,TokenType.LPAR)){
                 return this.parseCallExpression();
             }
@@ -540,10 +569,91 @@ export class Parser{
     }
 
     /**
+     * 解析元组剩余部分
+     */
+    parseTupleLiteralRest(first){
+        const elements=[first];
+        const startLoc=first.loc.start;
+
+        // 收集剩余元素
+        do{
+            if(this.check(0,TokenType.RPAR)||this.check(0,terminatorSet))break;
+            elements.push(this.parseExpression());
+        }while(this.match(TokenType.COMMA));
+
+        const endLoc=elements[elements.length-1].loc.end;
+
+        return new TupleLiteral(new Loc(...startLoc,...endLoc),elements);
+    }
+
+    /**
+     * 解析列表字面量
+     */
+    parseListLiteral(){
+        const startLoc=this.advance().loc.start;
+        const elements=[];
+
+        // 解析元素
+        while(!this.check(0,TokenType.RSQB)){
+            elements.push(this.parseExpression());
+            this.match(TokenType.COMMA);
+        }
+
+        const endLoc=this.advance().loc.end;
+
+        return new ListLiteral(new Loc(...startLoc,...endLoc),elements);
+    }
+
+    /**
+     * 解析字典字面量或集合字面量
+     */
+    parseDictOrSetLiteral(){
+        const startLoc=this.advance().loc.start;
+
+        // 特殊处理：空字典
+        if(this.check(0,TokenType.RBRACE)){
+            const endLoc=this.advance().loc.end;
+            return new DictLiteral(new Loc(...startLoc,...endLoc),[],[]);
+        }
+        
+        // 判断是字典字面量还是集合字面量
+        const first=this.parseExpression();
+        
+        if(this.check(0,TokenType.RBRACE)||this.match(TokenType.COMMA)){
+            // 集合字面量
+            const elements=[first];
+
+            while(!this.check(0,TokenType.RBRACE)){
+                elements.push(this.parseExpression());
+                this.match(TokenType.COMMA);
+            }
+
+            const endLoc=this.advance().loc.end;
+            return new SetLiteral(new Loc(...startLoc,...endLoc),elements);
+        }else if(this.match(TokenType.COLON)){
+            // 字典字面量
+            const keys=[first];
+            const values=[this.parseExpression()];
+            this.match(TokenType.COMMA);
+
+            while(!this.check(0,TokenType.RBRACE)){
+                keys.push(this.parseExpression());
+                this.consume(TokenType.COLON);
+                values.push(this.parseExpression());
+                this.match(TokenType.COMMA);
+            }
+
+            const endLoc=this.advance().loc.end;
+            return new DictLiteral(new Loc(...startLoc,...endLoc),keys,values);
+        }
+        this.raiseError();
+    }
+
+    /**
      * 解析调用表达式
      */
     parseCallExpression(){
-        const startLoc=Object.values(this.peek().loc.start);
+        const startLoc=this.peek().loc.start;
         const callee=new Identifier(this.peek().loc,this.advance().value);
         this.consume(TokenType.LPAR);
 
@@ -571,7 +681,7 @@ export class Parser{
             this.match(TokenType.COMMA);
         }
 
-        const endLoc=Object.values(this.advance().loc.end);
+        const endLoc=this.advance().loc.end;
 
         return new CallExpression(new Loc(...startLoc,...endLoc),callee,args,keywords);
     }
@@ -583,9 +693,29 @@ export class Parser{
         if(this.check(0,literalSet)){
             const token=this.advance();
             return new Literal(token.loc,token.value);
-        }if(this.check(0,TokenType.IDENTIFIER)){
+        }
+        if(this.check(0,TokenType.IDENTIFIER)){
             const token=this.advance();
             return new Identifier(token.loc,token.value);
+        }
+        if(this.check(0,TokenType.LPAR)){
+            const startLoc=this.advance().loc.start;
+
+            // 特殊处理：空元组
+            if(this.check(0,TokenType.RPAR)){
+                const endLoc=this.advance().loc.end;
+                return new TupleLiteral(new Loc(...startLoc,...endLoc),[]);
+            }
+
+            const inner=this.parseExpressionWithTuple();
+
+            const endLoc=this.peek().loc.end;
+            this.consume(TokenType.RPAR);
+
+            // 更新内部表达式的loc
+            inner.loc=new Loc(...startLoc,...endLoc);
+
+            return inner;
         }
         this.raiseError();
     }

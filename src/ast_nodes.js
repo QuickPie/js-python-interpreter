@@ -66,6 +66,55 @@ export class Identifier extends Expression{
     }
 }
 
+// 列表字面量（注意！列表和列表字面量是两个不同的概念，列表字面量是创建列表的一种方式）
+export class ListLiteral extends Expression{
+    constructor(loc,elements){
+        super('ListLiteral',loc);
+        this.elements=elements;
+    }
+
+    toString(){
+        return `ListLiteral(elements=${this.elements})`;
+    }
+}
+
+// 元组字面量
+export class TupleLiteral extends Expression{
+    constructor(loc,elements){
+        super('TupleLiteral',loc);
+        this.elements=elements;
+    }
+
+    toString(){
+        return `TupleLiteral(elements=${this.elements})`;
+    }
+}
+
+// 字典字面量
+export class DictLiteral extends Expression{
+    constructor(loc,keys,values){
+        super('DictLiteral',loc);
+        this.keys=keys;
+        this.values=values;
+    }
+
+    toString(){
+        return `DictLiteral(keys=${this.keys},values=${this.values})`;
+    }
+}
+
+// 集合字面量
+export class SetLiteral extends Expression{
+    constructor(loc,elements){
+        super('SetLiteral',loc);
+        this.elements=elements;
+    }
+
+    toString(){
+        return `SetLiteral(elements=${this.elements})`;
+    }
+}
+
 // 调用表达式
 export class CallExpression extends Expression{
     constructor(loc,callee,args,keywords){

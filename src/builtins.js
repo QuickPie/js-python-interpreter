@@ -1,10 +1,18 @@
 import {Interpreter} from './interpreter.js';
+import {HashManager} from './hash_manager.js';
 
 /**
  * 目标解释器
  * @type {Interpreter}
  */
-export let interpreter;
+let interpreter;
+
+/**
+ * 实现外部修改 interpreter
+ */
+export function setInterpreter(i){
+    interpreter=i;
+}
 
 export class Builtins{
     /**
@@ -59,32 +67,8 @@ export class Builtins{
             return 'function';
         }
         if(typeof value==='object'){
-            return value.constructor.name;
+            
         }
-    }
-
-    /**
-     * 将任何可迭代对象转换为数组
-     * 
-     * 根据python迭代行为转换
-     */
-    static toArray(i){
-        let iterable;
-
-        if(Array.isArray(i)||typeof i==='string'){
-            iterable=i;
-        }
-        if(i instanceof Map){
-            iterable=i.keys();
-        }
-        if(i instanceof Set){
-            iterable=i.values();
-        }
-        if(i&&typeof i[Symbol.iterator]==='function'){
-            iterable=i;
-        }
-
-        return Array.from(iterable);
     }
 
     // ---------- 内置函数（按照字母顺序） ----------
@@ -125,11 +109,11 @@ export class Builtins{
             }
 
             const iterable=args[0];
-            if(i==null||typeof obj[Symbol.iterator]!=='function'){
+            if(iterable==null||typeof iterable[Symbol.iterator]!=='function'){
                 interpreter.raiseError('TypeError',`'${this.getType(iterable)}' object is not iterable`,loc);
             }
 
-            for(const item of this.toArray(iterable)){
+            for(const item of iterable){
                 if(!item)return false;
             }
             return true;
@@ -151,7 +135,7 @@ export class Builtins{
                 interpreter.raiseError('TypeError',`'${this.getType(iterable)}' object is not iterable`,loc);
             }
 
-            for(const item of this.toArray(iterable)){
+            for(const item of iterable){
                 if(item)return true;
             }
             return false;
@@ -186,3 +170,47 @@ export class Builtins{
     }
 }
 
+// ---------- 内置类型 ----------
+
+export class PyList{
+    constructor(elements){
+        this.elements=elements;
+    }
+
+    *[Symbol.iterator](){
+        for(const item of this.elements)yield item;
+    }
+}
+
+export class PyTuple{
+    constructor(elements){
+        this.elements=elements;
+    }
+
+    *[Symbol.iterator](){
+        for(const item of this.elements)yield item;
+    }
+}
+
+export class PyDict{
+    constructor(keys,values){
+        this.keys=keys;
+        this.values=values;
+    }
+
+    *[Symbol.iterator](){
+        for(const item of this.keys)yield item;
+    }
+}
+
+export class PySet{
+    constructor(elements){
+        this.elements=elements.sort((a,b)=>{
+            return Math.random()-Math.random();
+        });
+    }
+
+    *[Symbol.iterator](){
+        for(const item of this.elements)yield item;
+    }
+}
